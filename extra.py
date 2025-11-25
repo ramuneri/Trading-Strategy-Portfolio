@@ -1,8 +1,9 @@
+import math
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import yfinance as yf
 import matplotlib.pyplot as plt
-import math
 
 tickers = ["AAPL", "META", "TSLA"]
 start = "2018-01-01"
@@ -31,32 +32,32 @@ all_returns = []
 for t in tickers:
     data = yf.download(t, start=start, end=end, auto_adjust=True)
     price = data["Close"].astype(float).squeeze()
-    df = ma_strategy(price)
-    results[t] = df
-    all_returns.append(df["Strategy_return"].rename(t))
 
-returns_df = pd.concat(all_returns, axis=1).dropna()
+    df = ma_strategy(price)                                 # price is a series, ma_strategy makes it a df with additional collumns
+    results[t] = df                                         # dictionary that has name + df
+    all_returns.append(df["Strategy_return"].rename(t))     # list of series that has all returns
 
-# 4 plots total (3 price charts + 1 portfolio equity chart)
+returns_df = pd.concat(all_returns, axis=1).dropna()        # puts all series in a row
+
 cols = 4
 rows = 1
 
-plt.figure(figsize=(18, 4))  # wider & shorter
-
-# PRICE CHARTS
+plt.figure(figsize=(18, 4)) 
 for i, t in enumerate(tickers):
     plt.subplot(rows, cols, i + 1)
-    price_data = yf.download(t, start=start, end=end, auto_adjust=True)
-    plt.plot(price_data["Close"])
+    data = yf.download(t, start=start, end=end, auto_adjust=True)
+    plt.plot(data["Close"])
     plt.title(t)
     plt.grid(True)
-    plt.xticks(rotation=25)
-    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(5))
 
-# GOOD PORTFOLIO (equal-weight) in subplot #4
-plt.subplot(rows, cols, len(tickers) + 1)  # this becomes position 4
+
+# Combined Portfolio Performance (Equal Weight)
+portfolio_returns = returns_df.mean(axis=1)
+portfolio_equity = (1 + portfolio_returns).cumprod()
+
+plt.subplot(rows, cols, len(tickers) + 1)
 plt.plot(portfolio_equity)
-plt.title("Bendras GERAS")
+plt.title("Equal Weight Portfolio Performance")
 plt.grid(True)
 
 plt.tight_layout()
@@ -66,10 +67,7 @@ plt.show()
 # CORRELATION MATRIX 
 corr = returns_df.corr()
 
-plt.figure(figsize=(6, 5))
-plt.imshow(corr, cmap="coolwarm", vmin=-1, vmax=1)
-plt.colorbar()
-plt.xticks(range(len(tickers)), tickers)
-plt.yticks(range(len(tickers)), tickers)
-plt.title("Strategijų koreliacija")
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1)
+plt.title("Correlation Matrix of Momentum Strategy Returns")
 plt.show()

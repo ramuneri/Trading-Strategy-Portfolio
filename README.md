@@ -100,6 +100,11 @@ Momentum strategies across different assets often have low correlation
 The portfolio benefits from mixing independent strategies
 Correlation was visualized using a heatmap.
 
+Correlation as "how similarly two strategies move."
+1.0 → move exactly the same
+0.0 → no relationship
+–1.0 → move opposite
+
 ## Visualizations
 
 The following charts were generated:
@@ -124,6 +129,7 @@ The equal-weight momentum portfolio shows smoother growth and less risk compared
 ---
 
 #### Short:
+
 - Apply the same strategy (momentum) to many assets
 - Optimized to find the best n for each instrument
 - Combine the strategy results (returns) into a portfolio

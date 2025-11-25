@@ -65,9 +65,7 @@ commission = 0.001
 all_returns = []
 results = {}
 
-print("\n==================== OPTIMIZATION RESULTS ====================\n")
 for t in tickers:
-
     data = yf.download(t, start=start, end=end, auto_adjust=True)
     price = data["Close"].astype(float).squeeze()
 
@@ -82,20 +80,8 @@ for t in tickers:
 returns_df = pd.concat(all_returns, axis=1).dropna()
 
 
-
-
 portfolio_returns = returns_df.mean(axis=1)
 portfolio_equity = (1 + portfolio_returns).cumprod()
-
-
-
-# CORRELATION MATRIX
-corr_matrix = returns_df.corr()
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1)
-plt.title("Correlation Matrix of Momentum Strategy Returns")
-plt.show()
 
 
 #  PRICE CHARTS and TOTALS
@@ -105,18 +91,18 @@ rows = math.ceil(num_plots / cols)
 
 plt.figure(figsize=(18, 12))
 
-# 1. Plot each stock price
+# Plot each stock price
 for i, t in enumerate(tickers):
     plt.subplot(rows, cols, i + 1)
-    price_data = yf.download(t, start=start, end=end, auto_adjust=True)
-    plt.plot(price_data["Close"])
+    data = yf.download(t, start=start, end=end, auto_adjust=True)
+    plt.plot(data["Close"])
     plt.title(t)
     plt.grid(True)
     plt.xticks(rotation=25)
     plt.gca().xaxis.set_major_locator(plt.MaxNLocator(6))
 
 
-# 2. BAD TOTAL (sum of strategy equity curves — WRONG METHOD)
+# BAD TOTAL (sum of strategy equity curves — WRONG METHOD)
 bad_total = (1 + returns_df).cumprod().sum(axis=1)
 
 plt.subplot(rows, cols, len(tickers) + 1)
@@ -124,12 +110,22 @@ plt.plot(bad_total)
 plt.title("Bendras BLOGAS (neteisinga suma)")
 plt.grid(True)
 
-# 3. GOOD TOTAL
+# Combined Portfolio Performance (Equal Weight)
 plt.subplot(rows, cols, len(tickers) + 2)
 plt.plot(portfolio_equity)
-plt.title("Bendras GERAS (lygios proporcijos)")
+plt.title("Equal Weight Portfolio Performance")
 plt.grid(True)
 
 plt.tight_layout()
 plt.show()
+
+
+# CORRELATION MATRIX
+corr = returns_df.corr()
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1)
+plt.title("Correlation Matrix of Momentum Strategy Returns")
+plt.show()
+
 
