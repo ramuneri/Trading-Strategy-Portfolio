@@ -5,51 +5,59 @@ import seaborn as sns
 import yfinance as yf
 import matplotlib.pyplot as plt
 
-
-# ===================== STRATEGY DEFINITION =====================
+# ============================================================
+# 1. MOMENTUM STRATEGY FUNCTION
+# ============================================================
 
 def momentum_strategy(price_series, n, commission):
+    """Momentum strategy: Buy if price > price n days ago, sell if lower."""
+    
     df = price_series.to_frame(name="Close").copy()
 
-    # Momentum signal
+    # Momentum indicator
     df["Momentum"] = df["Close"] - df["Close"].shift(n)
 
+    # Trading signal: 1 = long, -1 = short, 0 = neutral
     df["Signal"] = 0
     df.loc[df["Momentum"] > 0, "Signal"] = 1
     df.loc[df["Momentum"] < 0, "Signal"] = -1
 
-    # Trading cost = commission when signal changes
+    # Commission cost when signal changes (trade occurs)
     df["Trade_cost"] = 0.0
     df.loc[df["Signal"].diff() != 0, "Trade_cost"] = df["Close"] * commission
 
-    # Real daily profit in dollars
+    # Daily PnL (profit/loss)
     df["Daily_change"] = df["Close"].diff().fillna(0)
     df["Daily_profit"] = (
         df["Daily_change"] * df["Signal"].shift(1).fillna(0)
         - df["Trade_cost"]
     )
 
-    # Convert dollar PnL → percentage return
+    # Convert profit → percentage return
     df["Return_pct"] = df["Daily_profit"] / df["Close"].shift(1)
     df["Return_pct"] = df["Return_pct"].replace([np.inf, -np.inf], 0).fillna(0)
 
-    # Equity curve from % returns
+    # Equity curve (cumulative strategy performance)
     df["Equity"] = (1 + df["Return_pct"]).cumprod()
 
     return df
 
 
-# ===================== STRATEGY OPTIMIZATION =====================
+# ============================================================
+# 2. PARAMETER OPTIMIZATION (BRUTE FORCE)
+# ============================================================
 
 def optimize_momentum_strategy(price_series, n_values, commission):
+    """Tests multiple lookback windows (n) to find highest Sharpe ratio."""
+    
     best_sharpe = -999
-    best_n = 0
+    best_n = None
     best_df = None
 
     for n in n_values:
         df = momentum_strategy(price_series, n, commission)
-
         r = df["Return_pct"].replace([np.inf, -np.inf], np.nan).dropna()
+
         if len(r) < 30:
             continue
 
@@ -63,21 +71,24 @@ def optimize_momentum_strategy(price_series, n_values, commission):
     return best_df, best_n, best_sharpe
 
 
-# ===================== PARAMETERS =====================
+# ============================================================
+# 3. PARAMETERS
+# ============================================================
 
-tickers = ["AAPL", "AMZN", "MSFT", "TSLA", "GOOGL", "BP",
-           "GLD", "SPOT", "BKNG", "META"]
+tickers = ["AAPL", "AMZN", "MSFT", "TSLA", "GOOGL",
+           "BP", "GLD", "SPOT", "BKNG", "META"]
 
 start = "2010-01-01"
 end = "2020-01-01"
-n_values = list(range(5, 251, 5))
 commission = 0.001
+n_values = list(range(5, 251, 5))
 
-results = {}
 all_returns = []
+results = {}
 
-
-# ===================== DATA DOWNLOAD + OPTIMIZATION =====================
+# ============================================================
+# 4. DOWNLOAD DATA + OPTIMIZE EACH STRATEGY
+# ============================================================
 
 for t in tickers:
     data = yf.download(t, start=start, end=end, auto_adjust=True)
@@ -90,23 +101,17 @@ for t in tickers:
     results[t] = best_df
     all_returns.append(best_df["Return_pct"].rename(t))
 
-# Combine strategy returns
+# Combine all strategy returns into one DataFrame
 returns_df = pd.concat(all_returns, axis=1).dropna()
 
 
-# ===================== PORTFOLIO =====================
-
-portfolio_returns = returns_df.mean(axis=1)
-portfolio_equity = (1 + portfolio_returns).cumprod()
-
-
-# ===================== INDIVIDUAL EQUITY GRAPHS =====================
-
-num_eq_plots = len(tickers)
-cols = 4
-rows = math.ceil(num_eq_plots / cols)
+# ============================================================
+# 5. INDIVIDUAL EQUITY GRAPHS — STRATEGY PERFORMANCE
+# ============================================================
 
 plt.figure(figsize=(18, 12))
+cols = 4
+rows = math.ceil(len(tickers) / cols)
 
 for i, t in enumerate(tickers):
     plt.subplot(rows, cols, i + 1)
@@ -114,53 +119,44 @@ for i, t in enumerate(tickers):
     plt.title(f"{t} Strategy Equity")
     plt.grid(True)
     plt.xticks(rotation=25)
-    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(4))
+    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(5))
 
 plt.tight_layout()
 plt.show()
 
 
+# ============================================================
+# 6. PORTFOLIO — GOOD VS BAD METHOD
+# ============================================================
 
-# ===================== 2) PRICE CHARTS + BAD & GOOD TOTALS =====================
+portfolio_returns = returns_df.mean(axis=1)
+portfolio_equity = (1 + portfolio_returns).cumprod()
 
-num_plots = len(tickers) + 2
-cols = 4
-rows = math.ceil(num_plots / cols)
-
-plt.figure(figsize=(18, 12))
-
-# PRICE CHARTS
-for i, t in enumerate(tickers):
-    plt.subplot(rows, cols, i + 1)
-    data = yf.download(t, start=start, end=end, auto_adjust=True)
-    plt.plot(data["Close"])
-    plt.title(t)
-    plt.grid(True)
-    plt.xticks(rotation=25)
-    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(6))
-
-# BAD TOTAL (wrong method)
 bad_total = (1 + returns_df).cumprod().sum(axis=1)
-plt.subplot(rows, cols, len(tickers) + 1)
+
+plt.figure(figsize=(18, 5))
+
+plt.subplot(1, 2, 1)
 plt.plot(bad_total)
-plt.title("Bendras BLOGAS (neteisinga suma)")
+plt.title("BLOGAS bendras pelnas (neteisinga suma)")
 plt.grid(True)
 
-# GOOD TOTAL (portfolio)
-plt.subplot(rows, cols, len(tickers) + 2)
+plt.subplot(1, 2, 2)
 plt.plot(portfolio_equity)
-plt.title("Equal Weight Portfolio Performance")
+plt.title("GERAS portfelio pelnas (lygios proporcijos)")
 plt.grid(True)
 
 plt.tight_layout()
 plt.show()
 
 
-# ===================== 3) CORRELATION =====================
+# ============================================================
+# 7. CORRELATION MATRIX (OF STRATEGY RETURNS)
+# ============================================================
 
 corr = returns_df.corr()
 
 plt.figure(figsize=(10, 8))
 sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1)
-plt.title("Correlation Matrix of Momentum Strategy Returns")
+plt.title("Strategijų grąžų koreliacijų matrica")
 plt.show()
