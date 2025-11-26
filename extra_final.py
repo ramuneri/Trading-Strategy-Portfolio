@@ -6,8 +6,8 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 
 tickers = ["AAPL", "META", "TSLA"]
-start = "2018-01-01"
-end = "2024-01-01"
+start = "2020-01-01"
+end = "2025-01-01"
 
 
 def ma_strategy(price_series):
@@ -38,8 +38,6 @@ for t in tickers:
     all_returns.append(df["Strategy_return"].rename(t))
 
 
-returns_df = pd.concat(all_returns, axis=1).dropna()
-
 cols = 4
 rows = 1 
 
@@ -50,10 +48,8 @@ for i, t in enumerate(tickers):
     plt.title(f"{t}")
     plt.grid(True)
 
-plt.tight_layout()
 
-
-
+returns_df = pd.concat(all_returns, axis=1).dropna()
 portfolio_returns = returns_df.mean(axis=1)
 portfolio_equity = (1 + portfolio_returns).cumprod()
 
