@@ -2,10 +2,9 @@
 
 ## Introduction
 
-The goal of this assignment was to create a portfolio consisting of multiple financial instruments and evaluate its performance using a trading strategy developed in a previous task.
-In this case, I reused my momentum strategy from Homework 3.
+The goal of this assignment was to create a portfolio consisting of multiple financial instruments and evaluate its performance using a trading strategy (momentum strategy) developed in a previous project.
 
-#### The assignment required:
+#### Requirements:
 
 Running the same strategy on multiple assets
 Optimizing the parameters for each asset
@@ -14,8 +13,6 @@ Plotting the combined performance
 Calculating correlation between strategies
 
 ## Data and Instruments
-
-#### I selected ten instruments from different sectors and asset classes:
 
 - AAPL — Apple Inc.
 - AMZN — Amazon.com, Inc.
@@ -45,7 +42,7 @@ Daily Profit = Previous Signal × Daily Price Change – Trading Costs
 Daily returns
 Daily profit
 Equity curve
-This logic was wrapped into a reusable function.
+
 
 ## Parameter Optimization
 
@@ -64,21 +61,6 @@ This step ensures the strategy is tuned for each financial instrument.
 ---
 
 ## Portfolio Construction
-
-Two portfolio versions were created:
-
-#### Bad Portfolio (“Bendras BLOGAS”)
-
-- This incorrectly sums equity curves in dollars.
-- This method is wrong because:
-
-- Expensive stocks dominate the result
-- Percentage performance is ignored
-- Capital allocation is unrealistic
-
-- The portfolio becomes price-weighted, not equal-weighted
-
-#### Good Portfolio (“Bendras GERAS”)
 
 - An equal-weight portfolio using percentage returns:
 - portfolio_returns = mean of all strategy returns (each day)
